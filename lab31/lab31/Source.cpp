@@ -4,9 +4,58 @@
 #include <cstdio>
 #include <list>
 #define INF 100000
+#define UNRIGHT_PASSWORD -2
 using namespace std;
 
 int numEd = 0;
+unsigned char password[20] = { '\0' };
+char* check_pass = nullptr;
+void XorAlg(const int size)
+{
+	int in = 0;
+	for (in = 0; in < size; in++)
+	{
+		password[in] ^= 'A';
+	}
+}
+
+bool CheckPass()
+{
+	if (check_pass == nullptr)
+	{
+		return false;
+	}
+	if (strcmp((const char*)password, check_pass))
+	{
+		return false;
+	}
+	return true;
+}
+
+char * key()
+{
+	
+	ifstream input;
+	input.open("password.txt");
+	if (!input.is_open())
+	{
+		return nullptr;
+	}
+	char password_[20] = { '\0' };
+	input.getline(password_, 20);
+	size_t size = strlen(password_);
+	for (size_t i = 0; i < size; i++)
+	{
+		password[i] = password_[i];
+	}
+	XorAlg(size);
+	cout << "Enter password:" << endl;
+	char check[50] = { '\0' };
+	cin >> check;
+	input.close();
+	return check;
+}
+
 
 char get_input(const char* mask)
 {
@@ -686,12 +735,11 @@ void preparation_func(struct network* elem)
 }
 /*lab 4 end*/
 
-
 void menu()
 {
 	while (1)
 	{
-		system("cls");
+		//system("cls");
 		cout << "Choose lab, wich you want check" << endl;
 		cout << "1. Lab 2" << endl;
 		cout << "2. Lab 3" << endl;
@@ -702,6 +750,11 @@ void menu()
 		switch (choice) {
 		case '1':
 		{
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			struct graphG4* graph1 = new struct graphG4[1];
 			struct graphG5* graph2 = new struct graphG5[1];
 			if (!readGraph(graph1, graph2))
@@ -712,6 +765,11 @@ void menu()
 			}
 			bool* visited = new bool[graph1->matrixRow];
 			graph1->ost = new int* [graph1->matrixRow];
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			for (int i = 0; i < graph1->matrixRow; i++)
 			{
 				visited[i] = false;
@@ -768,6 +826,11 @@ void menu()
 		}
 		case '2':
 		{
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			struct graphG6* firstGraph = new struct graphG6[1];
 			struct graphG6* secondGraph = new struct graphG6[1];
 			char s[50] = { '\0' };
@@ -787,6 +850,11 @@ void menu()
 			readGraph(secondGraph, fins2);
 			fclose(fins1);
 			fclose(fins2);
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			int matrixRow = firstGraph->matrixRow;
 			firstGraph->d = new int[matrixRow];
 			firstGraph->p = new int[matrixRow];
@@ -812,11 +880,21 @@ void menu()
 		}
 		case '3':
 		{
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			struct network* netw = new struct network[sizeof(struct network)];
 			cout << "Enter file name" << endl;
 			char file_name[50] = { '\0' };
 			cin >> file_name;
 			FILE* fin = fopen(file_name, "r");
+			if (!CheckPass())
+			{
+				cout << "Error Password" << endl;
+				exit(UNRIGHT_PASSWORD);
+			}
 			if (fin == NULL)
 			{
 				cout << "Open error";
@@ -840,7 +918,12 @@ void menu()
 
 int main()
 {
-
+	check_pass = key();
+	if (!CheckPass())
+	{
+		cout << "Error Password" << endl;
+		exit(UNRIGHT_PASSWORD);
+	}
 	menu();
 	system("pause");
 	return 0;
