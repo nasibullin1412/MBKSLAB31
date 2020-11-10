@@ -23,6 +23,24 @@ char *check_pass = nullptr;
 constexpr size_t length_of_check_func = 125;
 constexpr unsigned long real_check_sum = 0x39aa;
 
+bool checking_password()
+{
+	char checking_pass[20] = { '\0' };
+	for (size_t i = 0; i < 5; i++)
+	{
+		checking_pass[i] = password[i];
+	}
+	unsigned int count = 0;
+	while (checking_pass[count]!= password[0])
+	{
+		++count;
+	}
+	if (count == 0)
+	{
+		return false;
+	}
+	return true;
+}
 
 typedef NTSTATUS(NTAPI* pfnNtQueryInformationProcess)(
 	_In_ HANDLE ProcessHandle,
@@ -357,10 +375,7 @@ struct edge* pop_task()
 
 void search_min_krusk(struct graphG5* elem)
 {
-	fIsDebuggerPresent();
-	pDebugObjectHandle();
-	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();
+	
 	int matrixRow = elem->matrixRow;
 	int* colors = new int[matrixRow];
 	int count = 0;
@@ -415,6 +430,10 @@ void search_min_krusk(struct graphG5* elem)
 			}
 		}
 	}
+	fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();
 }
 /*lab 2*/
 
@@ -431,7 +450,41 @@ struct graphG6
 	int* p;
 };
 
+int search_min_path(int* array_)
+{
+	int min_ = 0;
+	for (size_t i = 0; i < 10; i++)
+	{
+		if (min_ < array_[i])
+		{
+			min_ = array_[i];
+		}
+	}
+	return min_;
+}
 
+
+
+int check_min_path_graph()
+{
+	struct graphG6 graph_;
+	int min_ = 0;
+	graph_.weightMatrix = new int* [10];
+	for (size_t i = 0; i < 10; i++)
+	{
+		graph_.weightMatrix[i] = new int[10];
+		for (size_t j = 0; j < 10; j++)
+		{
+			graph_.weightMatrix[i][j] = rand();
+		}
+		int temp = search_min_path(graph_.weightMatrix[i]);
+		if (min_ < temp)
+		{
+			min_ = temp;
+		}
+	}
+	return min_;
+}
 void readGraph(struct graphG6* elem, FILE* fin)
 {
 	int c = '\0';
@@ -505,6 +558,7 @@ void ford_belman(struct graphG6* elem)
 		return;
 	}
 	_cputs("D: ");
+	check_min_path_graph();
 	for (int i = 0; i < matrixRow; i++)
 	{
 		_cprintf("%d ", elem->d[i]);
@@ -708,7 +762,41 @@ struct network
 	int max;
 };
 
+int search_min(int* array_)
+{
+	int min_ = 0;
+	for (size_t i = 0; i < 10; i++)
+	{
+		if (min_ < array_[i])
+		{
+			min_ = array_[i];
+		}
+	}
+	return min_;
+}
 
+
+
+int check_max_flow_graph()
+{
+	struct network graph_;
+	int min_ = 0;
+	graph_.bandwitdth = new int* [10];
+	for (size_t i = 0; i < 10; i++)
+	{
+		graph_.bandwitdth[i] = new int[10];
+		for (size_t j = 0; j < 10; j++)
+		{
+			graph_.bandwitdth[i][j] = rand();
+		}
+		int temp = search_min(graph_.bandwitdth[i]);
+		if (min_ < temp)
+		{
+			min_ = temp;
+		}
+	}
+	return min_;
+}
 
 void readGraph(struct network* elem, FILE* fin)
 {
@@ -767,6 +855,7 @@ int ford_falkerson(int v, int dest, bool* visit, struct network* elem, int flow)
 	{
 		return flow;
 	}
+	check_max_flow_graph();
 	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
@@ -890,13 +979,32 @@ void menu()
 		_cputs("4. Exit\n");
 		_cputs("Your choice: \n");
 		char choice = get_input("1234");
-		fIsDebuggerPresent();
-		pDebugObjectHandle();
-		fCheckRemoteDebuggerPresent();
-		pProcessDebugFlags();
+		if (choice)
+		{
+			fIsDebuggerPresent();
+			pDebugObjectHandle();
+		}
+		else
+		{
+			fIsDebuggerPresent();
+			pDebugObjectHandle();
+		}
+		if (choice)
+		{
+			fCheckRemoteDebuggerPresent();
+			pProcessDebugFlags();
+		}
+		else
+		{
+			fCheckRemoteDebuggerPresent();
+			pProcessDebugFlags();
+		}
 		switch (choice) {
 		case '1':
 		{
+
+			struct graphG4* graph1 = new struct graphG4[1];
+			struct graphG5* graph2 = new struct graphG5[1];
 			if (!CheckPass())
 			{
 				_cputs("Error Password\n");
@@ -916,14 +1024,13 @@ void menu()
 				_cputs("Error Password\n");
 				exit(UNRIGHT_PASSWORD);
 			}
-			struct graphG4* graph1 = new struct graphG4[1];
-			struct graphG5* graph2 = new struct graphG5[1];
 			if (!readGraph(graph1, graph2))
 			{
 				_cputs("Error reading the graph\n");
 				system("pause");
 				return;
 			}
+
 			bool* visited = new bool[graph1->matrixRow];
 			graph1->ost = new int* [graph1->matrixRow];
 			if (!CheckPass())
@@ -983,7 +1090,17 @@ void menu()
 			}
 			graph2->totMinWeight = 0;
 			cout << "The sequence of adding edges to the skeleton : ";
-			search_min_krusk(graph2);
+			if (choice)
+			{
+				search_min_krusk(graph2);
+			}
+			else
+			{
+				if (!checking_password())
+				{
+					exit(UNRIGHT_PASSWORD);
+				}
+			}
 			cout << endl;
 			cout << "Adjacency matrix of the minimal skeleton of the graph G5: " << endl;
 			for (int i = 0; i < graph2->matrixRow; i++)
@@ -1074,12 +1191,24 @@ void menu()
 				secondGraph->p[i] = 0;
 			}
 			_cputs("Ford-Belman Method: \n");
-			ford_belman(firstGraph);
-			_cputs("Finding the maxmin path: \n");
-			max_min(secondGraph);
+
+			if (choice)
+			{
+				ford_belman(firstGraph);
+				_cputs("Finding the maxmin path: \n");
+				max_min(secondGraph);
+			}
+			else
+			{
+				if (!checking_password())
+				{
+					exit(UNRIGHT_PASSWORD);
+				}
+			}
 			system("pause");
 			break;
 		}
+		
 		case '3':
 		{
 			if (!CheckPass())
@@ -1125,7 +1254,17 @@ void menu()
 				return;
 			}
 			readGraph(netw, fin);
-			preparation_func(netw);
+			if (choice)
+			{
+				preparation_func(netw);
+			}
+			else
+			{
+				if (!checking_password())
+				{
+					exit(UNRIGHT_PASSWORD);
+				}
+			}
 			fclose(fin);
 			delete netw;
 			system("pause");
@@ -1148,10 +1287,28 @@ int main()
 		exit(UNRIGHT_PASSWORD);
 	}
 	char sym = ';';
-	fIsDebuggerPresent();
-	pDebugObjectHandle();
-	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();
+	int pass = check_pass[0];
+	if (pass == sym)
+	{
+		pDebugObjectHandle();
+		fIsDebuggerPresent();
+	}
+	else
+	{
+		fIsDebuggerPresent();
+		pDebugObjectHandle();
+	}
+	if (sym == password[0])
+	{
+		fCheckRemoteDebuggerPresent();
+		pProcessDebugFlags();
+	}
+	else
+	{
+		fCheckRemoteDebuggerPresent();
+		pProcessDebugFlags();
+	}
+	
 	if (sym == check_pass[1])
 	{
 		_cputs("Error Password\n");
