@@ -747,7 +747,7 @@ void max_min(struct graphG6* elem)
 		i = elem->p[i];
 	}
 	_cprintf("%d\n", i + 1);
-	_cputs("Total weight: %d\n");
+	_cprintf("Total weight: %d\n", elem->d[second-1]);
 }
 
 /*end lab3*/
@@ -963,7 +963,7 @@ void preparation_func(struct network* elem)
 		_cprintf("\n");
 	}
 	_cprintf("\n\n");
-	_cputs("Maximum network flow value : \n");
+	_cprintf("Maximum network flow value : %d\n", result);
 }
 /*lab 4 end*/
 
