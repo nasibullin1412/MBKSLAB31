@@ -33,7 +33,7 @@ typedef NTSTATUS(NTAPI* pfnNtQueryInformationProcess)(
 	);
 
 
-/*void fIsDebuggerPresent() {
+void fIsDebuggerPresent() {
 	if (IsDebuggerPresent())
 	{
 		printf("Debugger detected\n");
@@ -42,10 +42,9 @@ typedef NTSTATUS(NTAPI* pfnNtQueryInformationProcess)(
 	else
 		printf("Debugger not detected\n");
 }
-*/
 // 3.3
 // reference: "Anti-Unpacker Tricks" by Peter Ferrie
-/*void fCheckRemoteDebuggerPresent() {
+void fCheckRemoteDebuggerPresent() {
 
 	BOOL isdbg = FALSE;
 
@@ -58,12 +57,12 @@ typedef NTSTATUS(NTAPI* pfnNtQueryInformationProcess)(
 	else
 		printf("Debugger not detected\n");
 }
-*/
+
 
 
 // 3.6
 // reference: "Anti-Unpacker Tricks" by Peter Ferrie
-/*
+
 void pDebugObjectHandle() {
 
 	HANDLE proc;
@@ -112,7 +111,7 @@ void pProcessDebugFlags() {
 		printf("Debugger not detected\n");
 }
 
-*/
+
 
 void XorAlg(const int size)
 {
@@ -358,10 +357,10 @@ struct edge* pop_task()
 
 void search_min_krusk(struct graphG5* elem)
 {
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	int matrixRow = elem->matrixRow;
 	int* colors = new int[matrixRow];
 	int count = 0;
@@ -440,10 +439,10 @@ void readGraph(struct graphG6* elem, FILE* fin)
 	int numbEdge = 0;
 	int befc = 0;
 	c = fgetc(fin);
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	while (c != '\n')
 	{
 		if (c != '-' && (befc < '0' || befc > '9'))
@@ -510,10 +509,10 @@ void ford_belman(struct graphG6* elem)
 	{
 		_cprintf("%d ", elem->d[i]);
 	}
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	_cputs("\nP: ");
 	for (int i = 0; i < matrixRow; i++)
 	{
@@ -718,10 +717,10 @@ void readGraph(struct network* elem, FILE* fin)
 	int numbEdge = 0;
 	c = fgetc(fin);
 	int befC = 0;
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	while (c != '\n')
 	{
 		if (c != ' ' && c != '-' && (befC < '0' || befC > '9'))
@@ -768,10 +767,10 @@ int ford_falkerson(int v, int dest, bool* visit, struct network* elem, int flow)
 	{
 		return flow;
 	}
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	visit[v] = true;
 	int curf = 0;
 	for (int i = 0; i < elem->matrixRow; i++)
@@ -796,10 +795,10 @@ void preparation_func(struct network* elem)
 	int dest = 0;
 	int source = 0;
 	bool first = false;
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	bool second = false;
 	elem->secBandwidth = new int* [matrixRow];
 	for (int i = 0; i < matrixRow; i++)
@@ -835,10 +834,10 @@ void preparation_func(struct network* elem)
 	int result = 0;
 	int temp = 0;
 	int** fban = new int* [matrixRow];
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	for (int i = 0; i < matrixRow; i++)
 	{
 		fban[i] = new int[matrixRow];
@@ -891,10 +890,10 @@ void menu()
 		_cputs("4. Exit\n");
 		_cputs("Your choice: \n");
 		char choice = get_input("1234");
-		/*fIsDebuggerPresent();
+		fIsDebuggerPresent();
 		pDebugObjectHandle();
 		fCheckRemoteDebuggerPresent();
-		pProcessDebugFlags();*/
+		pProcessDebugFlags();
 		switch (choice) {
 		case '1':
 		{
@@ -1141,9 +1140,7 @@ void menu()
 }
 
 int main()
-{
-
-	
+{	
 	check_pass = key();
 	if (!CheckPass())
 	{
@@ -1151,10 +1148,10 @@ int main()
 		exit(UNRIGHT_PASSWORD);
 	}
 	char sym = ';';
-	/*fIsDebuggerPresent();
+	fIsDebuggerPresent();
 	pDebugObjectHandle();
 	fCheckRemoteDebuggerPresent();
-	pProcessDebugFlags();*/
+	pProcessDebugFlags();
 	if (sym == check_pass[1])
 	{
 		_cputs("Error Password\n");
