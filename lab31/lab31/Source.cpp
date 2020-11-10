@@ -3,13 +3,117 @@
 #include <fstream>
 #include <cstdio>
 #include <list>
+#include <conio.h>
+#include <windows.h>
+#include <versionhelpers.h>
+#include <winternl.h>
+
+/*#include "defs.h"
+#include "ntDefs.h"
+#include "defs2.h"*/
+
 #define INF 100000
 #define UNRIGHT_PASSWORD -2
+#define OTLADCHIK -3
 using namespace std;
 
 int numEd = 0;
 unsigned char password[20] = { '\0' };
-char* check_pass = nullptr;
+char *check_pass = nullptr;
+constexpr size_t length_of_check_func = 125;
+constexpr unsigned long real_check_sum = 0x39aa;
+
+
+typedef NTSTATUS(NTAPI* pfnNtQueryInformationProcess)(
+	_In_ HANDLE ProcessHandle,
+	_In_ UINT ProcessInformationClass,
+	_Out_ PVOID ProcessInformation,
+	_In_ ULONG ProcessInformationLength,
+	_Out_opt_ PULONG ReturnLength
+	);
+
+
+/*void fIsDebuggerPresent() {
+	if (IsDebuggerPresent())
+	{
+		printf("Debugger detected\n");
+		exit(OTLADCHIK);
+	}
+	else
+		printf("Debugger not detected\n");
+}
+*/
+// 3.3
+// reference: "Anti-Unpacker Tricks" by Peter Ferrie
+/*void fCheckRemoteDebuggerPresent() {
+
+	BOOL isdbg = FALSE;
+
+	CheckRemoteDebuggerPresent(GetCurrentProcess(), &isdbg);
+	if (isdbg)
+	{
+		printf("Debugger detected\n");
+		exit(OTLADCHIK);
+	}
+	else
+		printf("Debugger not detected\n");
+}
+*/
+
+
+// 3.6
+// reference: "Anti-Unpacker Tricks" by Peter Ferrie
+/*
+void pDebugObjectHandle() {
+
+	HANDLE proc;
+	NTSTATUS ntStatus;
+	HANDLE hDebugHandle = NULL;
+	proc = GetCurrentProcess();
+
+	pfnNtQueryInformationProcess NtQueryInformationProcess = NULL;
+	HMODULE hNtDll = LoadLibrary(TEXT("ntdll.dll"));
+	NtQueryInformationProcess = (pfnNtQueryInformationProcess)GetProcAddress(hNtDll, "NtQueryInformationProcess");
+	UINT ProcessDebugObjectHandle = 0x1E;
+
+	ntStatus = NtQueryInformationProcess(proc, ProcessDebugObjectHandle, &hDebugHandle, sizeof(hDebugHandle), NULL);
+	if (hDebugHandle)
+	{
+		printf("Debugger detected\n");
+		exit(OTLADCHIK);
+		return;
+	}
+	else
+	{
+		printf("Debugger not detected\n");
+		return;
+	}
+}
+
+
+
+// 3.7
+// reference: "Anti-Unpacker Tricks" by Peter Ferrie
+void pProcessDebugFlags() {
+
+	HANDLE proc;
+	NTSTATUS ntStatus;
+	HANDLE hDebugFlags = NULL;
+	proc = GetCurrentProcess();
+
+	pfnNtQueryInformationProcess NtQueryInformationProcess = NULL;
+	HMODULE hNtDll = LoadLibrary(TEXT("ntdll.dll"));
+	NtQueryInformationProcess = (pfnNtQueryInformationProcess)GetProcAddress(hNtDll, "NtQueryInformationProcess");
+	UINT ProcessDebugFlags = 0x1F;
+	ntStatus = NtQueryInformationProcess(proc, ProcessDebugFlags, &hDebugFlags, sizeof(hDebugFlags), NULL);
+	if (hDebugFlags == FALSE)
+		printf("Debugger detected\n");
+	else
+		printf("Debugger not detected\n");
+}
+
+*/
+
 void XorAlg(const int size)
 {
 	int in = 0;
@@ -49,11 +153,27 @@ char * key()
 		password[i] = password_[i];
 	}
 	XorAlg(size);
-	cout << "Enter password:" << endl;
-	char check[50] = { '\0' };
-	cin >> check;
+	_cputs("Enter password:\n");
+	//char check[50] = { '\0' };
+	char* check = new char[50];
+	size_t length = 50;
+	_cgets_s(check, 50, &length);
+	check[length] = '\0';
 	input.close();
 	return check;
+}
+
+unsigned long CrcCalculation()
+{
+	bool (*ptr)(void);
+	ptr = &CheckPass;
+
+	unsigned long check_sum = 0;
+	for (size_t i = 0; i < length_of_check_func; i++)
+	{
+		check_sum += *(unsigned char*)((char*)ptr + i);
+	}
+	return check_sum;
 }
 
 
@@ -64,7 +184,7 @@ char get_input(const char* mask)
 		res = tolower(getchar());
 		while (getchar() != '\n');
 		if (strchr(mask, res)) return res;
-		cout << "No such command\nYour choice: ";
+		_cputs("No such command\nYour choice: ");
 	}
 }
 
@@ -101,7 +221,7 @@ int tasks_cnt = 0;
 bool readGraph(struct graphG4* elem, struct graphG5* elemSec)
 {
 	char s[50] = { '\0' };
-	cout << "Enter file, which u want open: " << endl;
+	_cputs("Enter file, which u want open: \n");
 	cin >> s;
 	FILE* fin = fopen(s, "r");
 	if (fin == NULL)
@@ -142,7 +262,7 @@ bool readGraph(struct graphG4* elem, struct graphG5* elemSec)
 	elem->numbEdge = numbEdge / 2;
 	fclose(fin);
 	char l[50] = { '\0' };
-	cout << "Enter the file name(Kruskal's algorithm):" << endl;
+	_cprintf("Enter the file name(Kruskal's algorithm):\n");
 	cin >> l;
 	fin = fopen(l, "r");
 	if (fin == NULL)
@@ -183,7 +303,7 @@ void DFS(int st, bool* visited, struct graphG4* elem)
 	for (r = 0; r < elem->matrixRow; r++)
 		if ((elem->g4[st][r] != 0) && (!visited[r]))
 		{
-			cout << st + 1 << "-" << r + 1 << " ";
+			_cprintf("%d - %d ",st + 1, r + 1);
 			DFS(r, visited, elem);
 			numEd++;
 			elem->ost[st][r] += 1;
@@ -238,6 +358,10 @@ struct edge* pop_task()
 
 void search_min_krusk(struct graphG5* elem)
 {
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	int matrixRow = elem->matrixRow;
 	int* colors = new int[matrixRow];
 	int count = 0;
@@ -263,7 +387,7 @@ void search_min_krusk(struct graphG5* elem)
 		int second = temp->second;
 		if (colors[first] != colors[second])
 		{
-			cout << first + 1 << "-" << second + 1 << " ";
+			_cprintf("%d - %d ", first + 1, second + 1);
 			elem->adjMatrix[first][second] = 1;
 			elem->adjMatrix[second][first] = 1;
 			elem->totMinWeight += temp->weight;
@@ -316,6 +440,10 @@ void readGraph(struct graphG6* elem, FILE* fin)
 	int numbEdge = 0;
 	int befc = 0;
 	c = fgetc(fin);
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	while (c != '\n')
 	{
 		if (c != '-' && (befc < '0' || befc > '9'))
@@ -353,13 +481,13 @@ void ford_belman(struct graphG6* elem)
 	int matrixRow = elem->matrixRow;
 	int first = 0;
 	int second = 0;
-	cout << "Enter the vertex the path you want to find from: " << endl;
+	_cputs("Enter the vertex the path you want to find from: \n");
 	cin >> first;
-	cout << "Enter the vertex the path to which you want to find: " << endl;
+	_cputs("Enter the vertex the path to which you want to find: \n");
 	cin >> second;
 	if (first > matrixRow || second > matrixRow)
 	{
-		cout << "erorr" << endl;
+		_cputs("erorr\n");
 		return;
 	}
 	bool check = true;
@@ -374,20 +502,24 @@ void ford_belman(struct graphG6* elem)
 	}
 	if (check)
 	{
-		cout << "No path was found" << endl;
+		_cputs("No path was found\n");
 		return;
 	}
-	cout << "D: ";
+	_cputs("D: ");
 	for (int i = 0; i < matrixRow; i++)
 	{
-		cout << elem->d[i] << ' ';
+		_cprintf("%d ", elem->d[i]);
 	}
-	cout << endl; cout << "P: ";
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
+	_cputs("\nP: ");
 	for (int i = 0; i < matrixRow; i++)
 	{
-		cout << elem->p[i] + 1 << ' ';
+		_cprintf("%d ", elem->p[i] + 1);
 	}
-	cout << endl << endl;
+	_cputs("\n\n");
 	bool change = true;
 	while (change)
 	{
@@ -404,32 +536,31 @@ void ford_belman(struct graphG6* elem)
 				}
 			}
 		}
-		cout << "D: ";
+		_cputs("D: ");
 		for (int i = 0; i < matrixRow; i++)
 		{
-			cout << elem->d[i] << ' ';
+			_cprintf("%d ", elem->d[i]);
 		}
-		cout << endl;
-		cout << "P: ";
+		_cputs("\nP: ");
 		for (int i = 0; i < matrixRow; i++)
 		{
-			cout << elem->p[i] + 1 << ' ';
+			_cprintf("%d ", elem->p[i] + 1);
 		}
-		cout << endl << endl;
+		_cputs("\n\n");
 	}
 	int i = second - 1;
 	if (elem->d[second - 1] == INF)
 	{
-		cout << "No path was found" << endl;
+		_cputs("No path was found\n"); //<< endl;
 		return;
 	}
 	while (i != first - 1)
 	{
-		cout << i + 1 << "<-";
+		_cprintf("%d<-", i + 1);
 		i = elem->p[i];
 	}
-	cout << i + 1 << endl;
-	cout << "Total weight: " << elem->d[second - 1] << endl;
+	_cprintf("%d\n", i + 1);
+	_cprintf("Total weight: %d\n", elem->d[second - 1]);
 }
 
 
@@ -438,13 +569,13 @@ void max_min(struct graphG6* elem)
 	int matrixRow = elem->matrixRow;
 	int first = 0;
 	int second = 0;
-	cout << "Enter the vertex the path you want to find from: " << endl;
+	_cputs("Enter the vertex the path you want to find from: \n");
 	cin >> first;
-	cout << "Enter the vertex the path to which you want to find: " << endl;
+	_cputs("Enter the vertex the path to which you want to find: \n");
 	cin >> second;
 	if (first > matrixRow || second > matrixRow)
 	{
-		cout << "erorr" << endl;
+		_cputs("erorr\n");
 		return;
 	}
 	int* s = new int[matrixRow];
@@ -460,12 +591,12 @@ void max_min(struct graphG6* elem)
 	int max = 0;
 	int maxIdx = 0;
 	//elem->min -= 1;
-	cout << "S { ";
+	_cputs("S { \n");
 	for (int k = 0; k < counts - 1; k++)
 	{
-		cout << s[k] + 1 << ' ';
+		_cprintf("%d ", s[k] + 1);
 	}
-	cout << "} " << endl;
+	_cprintf("} \n");
 	for (int i = 0; i < matrixRow; i++)
 	{
 		//if (elem->weightMatrix[first - 1][i] != 0 || first - 1 == i)
@@ -483,30 +614,29 @@ void max_min(struct graphG6* elem)
 		}*/
 		elem->p[i] = first - 1;
 	}
-	cout << "D: ";
+	_cprintf("D: ");
 	for (int i = 0; i < matrixRow; i++)
 	{
-		cout << elem->d[i] << ' ';
+		_cprintf("%d ", elem->d[i]);
 	}
-	cout << endl;
-	cout << "P: ";
+	_cputs ("\nP: ");
 	for (int i = 0; i < matrixRow; i++)
 	{
-		cout << elem->p[i] + 1 << ' ';
+		_cprintf("%d ", elem->p[i] + 1);
 	}
-	cout << endl << endl;
+	_cputs("\n\n");
 	v[maxIdx] = false;
 	s[1] = maxIdx;
 	max = -10000;
 	maxIdx = 0;
 	for (int i = 0; i < matrixRow - 2; i++)
 	{
-		cout << "S { ";
+		_cputs("S { ");
 		for (int k = 0; k < counts; k++)
 		{
-			cout << s[k] + 1 << ' ';
+			_cprintf("%d ", s[k] + 1);
 		}
-		cout << "} " << endl;
+		_cputs("} \n");
 		for (int k = 0; k < matrixRow; k++)
 		{
 			if (v[k] && elem->weightMatrix[s[counts - 1]][k] != INF && elem->weightMatrix[s[counts - 1]][k] > elem->d[k])
@@ -539,34 +669,32 @@ void max_min(struct graphG6* elem)
 		counts++;
 		v[maxIdx] = false;
 		max = -10000;
-		cout << "D: ";
+		_cputs("D: ");
 		for (int i = 0; i < matrixRow; i++)
 		{
-			cout << elem->d[i] << ' ';
+			_cprintf("%d ", elem->d[i]);
 		}
-		cout << endl;
-		cout << "P: ";
+		_cputs("\nP: ");
 		for (int i = 0; i < matrixRow; i++)
 		{
-			cout << elem->p[i] + 1 << ' ';
+			_cprintf("%d ", elem->p[i] + 1);
 		}
-		cout << endl << endl;
+		_cputs("\n\n");
 	}
 
 	int i = second - 1;
 	if (-(elem->d[second - 1]) == INF)
 	{
-		cout << endl;
-		cout << "No path was found" << endl;
+		_cputs("\nNo path was found\n");
 		return;
 	}
 	while (i != first - 1)
 	{
-		cout << i + 1 << "<-";
+		_cprintf("%d<-", i + 1);
 		i = elem->p[i];
 	}
-	cout << i + 1 << endl;
-	cout << "Total weight: " << elem->d[second - 1] << endl;
+	_cprintf("%d\n", i + 1);
+	_cputs("Total weight: %d\n");
 }
 
 /*end lab3*/
@@ -590,6 +718,10 @@ void readGraph(struct network* elem, FILE* fin)
 	int numbEdge = 0;
 	c = fgetc(fin);
 	int befC = 0;
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	while (c != '\n')
 	{
 		if (c != ' ' && c != '-' && (befC < '0' || befC > '9'))
@@ -618,7 +750,7 @@ void readGraph(struct network* elem, FILE* fin)
 }
 
 
-int min(int first, int second)
+int min_value(int first, int second)
 {
 	if (first < second)
 	{
@@ -636,13 +768,17 @@ int ford_falkerson(int v, int dest, bool* visit, struct network* elem, int flow)
 	{
 		return flow;
 	}
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	visit[v] = true;
 	int curf = 0;
 	for (int i = 0; i < elem->matrixRow; i++)
 	{
 		if (elem->bandwitdth[v][i] > 0 && !visit[i])
 		{
-			curf = ford_falkerson(i, dest, visit, elem, min(elem->bandwitdth[v][i], flow));
+			curf = ford_falkerson(i, dest, visit, elem, min_value(elem->bandwitdth[v][i], flow));
 			if (curf > 0)
 			{
 				elem->bandwitdth[v][i] -= curf;
@@ -660,6 +796,10 @@ void preparation_func(struct network* elem)
 	int dest = 0;
 	int source = 0;
 	bool first = false;
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	bool second = false;
 	elem->secBandwidth = new int* [matrixRow];
 	for (int i = 0; i < matrixRow; i++)
@@ -690,11 +830,15 @@ void preparation_func(struct network* elem)
 	}
 
 
-	cout << "Source: " << source + 1 << endl;
-	cout << "Destination: " << dest + 1 << endl;
+	_cprintf("Source: %d\n", source + 1);
+	_cprintf("Destination: %d", dest + 1);
 	int result = 0;
 	int temp = 0;
 	int** fban = new int* [matrixRow];
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
 	for (int i = 0; i < matrixRow; i++)
 	{
 		fban[i] = new int[matrixRow];
@@ -714,24 +858,24 @@ void preparation_func(struct network* elem)
 		result += temp;
 	} while (temp != 0);
 
-	cout << "Max Flow: " << endl;
+	_cputs("Max Flow: \n");
 	for (int i = 0; i < matrixRow; i++)
 	{
 		for (int j = 0; j < matrixRow; j++)
 		{
 			if (fban[i][j] == 0)
 			{
-				cout << "0/0  ";
+				_cputs("0/0  ");
 			}
 			else
 			{
-				cout << elem->bandwitdth[j][i] << "/" << fban[i][j] << "  ";
+				_cprintf("%d/%d  ", elem->bandwitdth[j][i], fban[i][j]);
 			}
 		}
-		cout << endl;
+		_cprintf("\n");
 	}
-	cout << endl << endl;
-	cout << "Maximum network flow value : " << result << endl;
+	_cprintf("\n\n");
+	_cputs("Maximum network flow value : \n");
 }
 /*lab 4 end*/
 
@@ -740,26 +884,44 @@ void menu()
 	while (1)
 	{
 		//system("cls");
-		cout << "Choose lab, wich you want check" << endl;
-		cout << "1. Lab 2" << endl;
-		cout << "2. Lab 3" << endl;
-		cout << "3. Lab 4" << endl;
-		cout << "4. Exit" << endl;
-		cout << "Your choice: ";
+		_cputs("Choose lab, wich you want check\n");
+		_cputs("1. Lab 2\n");
+		_cputs("2. Lab 3\n");
+		_cputs("3. Lab 4\n");
+		_cputs("4. Exit\n");
+		_cputs("Your choice: \n");
 		char choice = get_input("1234");
+		/*fIsDebuggerPresent();
+		pDebugObjectHandle();
+		fCheckRemoteDebuggerPresent();
+		pProcessDebugFlags();*/
 		switch (choice) {
 		case '1':
 		{
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			unsigned long check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
+				exit(UNRIGHT_PASSWORD);
+			}
+			char symbol = '/';
+			if (check_pass[0] == symbol)
+			{
+				_cputs("Error Password\n");
 				exit(UNRIGHT_PASSWORD);
 			}
 			struct graphG4* graph1 = new struct graphG4[1];
 			struct graphG5* graph2 = new struct graphG5[1];
 			if (!readGraph(graph1, graph2))
 			{
-				cout << "Error reading the graph" << endl;
+				_cputs("Error reading the graph\n");
 				system("pause");
 				return;
 			}
@@ -767,7 +929,21 @@ void menu()
 			graph1->ost = new int* [graph1->matrixRow];
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			symbol = '/';
+			if (check_pass[0] == symbol)
+			{
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
 				exit(UNRIGHT_PASSWORD);
 			}
 			for (int i = 0; i < graph1->matrixRow; i++)
@@ -779,22 +955,21 @@ void menu()
 					graph1->ost[i][j] = 0;
 				}
 			}
-			cout << "The sequence of adding edges to the skeleton: ";
+			_cputs("The sequence of adding edges to the skeleton: ");
 			for (int i = 0; i < graph1->matrixRow; i++)
 			{
 				DFS(i, visited, graph1);
 			}
-			cout << endl;
-			cout << "The adjacency matrix of the skeleton of the graph G4:" << endl;
+			_cputs("\nThe adjacency matrix of the skeleton of the graph G4:\n");
 			for (int i = 0; i < graph1->matrixRow; i++)
 			{
 				visited[i] = 0;
 				for (int j = 0; j < graph1->matrixRow; j++)
 				{
-					cout << graph1->ost[i][j] << ' ';
+					_cprintf("%d ", graph1->ost[i][j]);
 					graph1->ost[i][j] = 0;
 				}
-				cout << endl;
+				_cputs("\n");
 			}
 
 			cout << endl;
@@ -828,22 +1003,36 @@ void menu()
 		{
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			char symbol = '/';
+			if (check_pass[0] == symbol)
+			{
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			unsigned long check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
 				exit(UNRIGHT_PASSWORD);
 			}
 			struct graphG6* firstGraph = new struct graphG6[1];
 			struct graphG6* secondGraph = new struct graphG6[1];
 			char s[50] = { '\0' };
 			char sec[50] = { '\0' };
-			cout << "Enter the file name(Ford - Belman algorithm) : " << endl;
+			_cputs("Enter the file name(Ford - Belman algorithm) : \n");
 			cin >> s;
-			cout << "Enter file name(max - min path) : " << endl;
+			_cputs("Enter file name(max - min path) : \n");
 			cin >> sec;
 			FILE* fins1 = fopen(s, "r");
 			FILE* fins2 = fopen(sec, "r");
 			if (fins1 == NULL || fins2 == NULL)
 			{
-				printf("Error");
+				_cprintf("Error");
 				return;
 			}
 			readGraph(firstGraph, fins1);
@@ -852,7 +1041,21 @@ void menu()
 			fclose(fins2);
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			symbol = '/';
+			if (check_pass[0] == symbol)
+			{
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
 				exit(UNRIGHT_PASSWORD);
 			}
 			int matrixRow = firstGraph->matrixRow;
@@ -871,9 +1074,9 @@ void menu()
 				secondGraph->d[i] = 0;
 				secondGraph->p[i] = 0;
 			}
-			cout << "Ford-Belman Method: " << endl;
+			_cputs("Ford-Belman Method: \n");
 			ford_belman(firstGraph);
-			cout << "Finding the maxmin path: " << endl;
+			_cputs("Finding the maxmin path: \n");
 			max_min(secondGraph);
 			system("pause");
 			break;
@@ -882,22 +1085,44 @@ void menu()
 		{
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			unsigned long check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
 				exit(UNRIGHT_PASSWORD);
 			}
 			struct network* netw = new struct network[sizeof(struct network)];
-			cout << "Enter file name" << endl;
+			_cputs("Enter file name\n");
 			char file_name[50] = { '\0' };
 			cin >> file_name;
 			FILE* fin = fopen(file_name, "r");
 			if (!CheckPass())
 			{
-				cout << "Error Password" << endl;
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			char symbol = '/';
+			if (check_pass[0] == symbol)
+			{
+				_cputs("Error Password\n");
+				exit(UNRIGHT_PASSWORD);
+			}
+			check_sum = CrcCalculation();
+			_cprintf("Checksum %x\n", check_sum);
+			if (check_sum != real_check_sum)
+			{
+				_cputs("Error CRC\n");
+				system("pause");
 				exit(UNRIGHT_PASSWORD);
 			}
 			if (fin == NULL)
 			{
-				cout << "Open error";
+				_cputs("Open error");
 				return;
 			}
 			readGraph(netw, fin);
@@ -908,20 +1133,39 @@ void menu()
 		}
 		case '4':
 		{
-			cout << "End programm..." << endl;
+			_cputs("End programm...\n");
 			return;
 		}
 		}
 	}
 }
 
-
 int main()
 {
+
+	
 	check_pass = key();
 	if (!CheckPass())
 	{
-		cout << "Error Password" << endl;
+		_cputs("Error Password\n");
+		exit(UNRIGHT_PASSWORD);
+	}
+	char sym = ';';
+	/*fIsDebuggerPresent();
+	pDebugObjectHandle();
+	fCheckRemoteDebuggerPresent();
+	pProcessDebugFlags();*/
+	if (sym == check_pass[1])
+	{
+		_cputs("Error Password\n");
+		exit(UNRIGHT_PASSWORD);
+	}
+	unsigned long check_sum = CrcCalculation();
+	printf("Checksum %x\n", check_sum);
+	if (check_sum != real_check_sum)
+	{
+		_cputs("Error CRC\n");
+		system("pause");
 		exit(UNRIGHT_PASSWORD);
 	}
 	menu();
