@@ -149,6 +149,11 @@
   <ItemGroup>
     <ClInclude Include="ntDefs.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Haephrati_String_Obfuscation_Tool\aes\obfinsider.vcxproj">
+      <Project>{4755751c-4f01-40c1-81cf-fa85e9781d01}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
